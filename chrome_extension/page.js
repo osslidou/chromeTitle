@@ -5,19 +5,32 @@ if (!document.hasRun) {
 
     chrome.runtime.onMessage.addListener(messageListener);
     document.hasRun = true;
+
+    document.hs_counter = 1;
 }
 
-// function that waits for events from background extension worker
+// function that waits for commands from background extension worker
 function messageListener(request, sender, sendResponse) {
     try {
 
         console.log('incoming command: ' + JSON.stringify(request));
 
-request.forEach(function(entry){
-    console.log('value command: ' + entry.text);
-    $('body').highlight( entry.text);
-});
+        var fullTitle = request.text;
+        if (request.isAppendCurrent) {
+            var titleSplit = document.title.split(' • ');
+            var originalTitle = titleSplit.length > 1 ? titleSplit[1] : titleSplit[0];
+            fullTitle += ' • ' + originalTitle;
+        }
 
+
+        document.title = fullTitle;
+
+
+        /*        request.forEach(function (entry) {
+                    console.log('value command: ' + entry.text);
+                    $('body').highlight(entry.text);
+                });
+        */
 
         /*
                 var data = request.data;

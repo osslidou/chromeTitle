@@ -5,12 +5,35 @@ var pageErrors = [];
 
 var patrolData;
 var accountInfo;
-var socket;
+var rules;
 
-chrome.tabs.onUpdated.addListener(injectDependenciesAfterPageLoaded);
+var dep_page = {};
+var dep_jquery = {};
+var counter = 0;
 
+chrome.storage.sync.get('rules', function (items) {
+    rules = items['rules'];
 
+    chrome.tabs.onUpdated.addListener(injectDependenciesAfterPageLoaded);
 
+    chrome.runtime.onMessage.addListener(
+        function (request, sender, sendResponse) {
+            switch (request.cmd) {
+                case 'get_rules':
+                    var response = {};
+                    response.rules = rules;
+                    sendResponse(response);
+                    break;
+
+                case 'update_rules':
+                    rules = request.value;
+                    chrome.storage.sync.set({ 'rules': rules });
+                    break;
+            }
+
+            return true;
+        });
+});
 
 /*
 chrome.tabs.query({'active': true, 'windowId': chrome.windows.WINDOW_ID_CURRENT},
@@ -20,33 +43,34 @@ chrome.tabs.query({'active': true, 'windowId': chrome.windows.WINDOW_ID_CURRENT}
 );
 */
 
+function isMatchRule(str, rule) {
+    return new RegExp("^" + rule.split("*").join(".*") + "$").test(str);
+}
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-        switch (request.cmd) {
-            case 'get_config_data':
-                var response = {};
-                chrome.storage.sync.get('config', function (items) {
-                    console.log('get config:', JSON.stringify(items));
-                    response.configData = items['config'];
-                    console.log('get config - response', JSON.stringify(response));
-                    
-                    //sendResponse(response);
+function afterTabUpdated(tabId) {
+    chrome.tabs.get(tabId, function (tab) {
+        console.log('rules BEGIN');
 
-                sendResponse({data:123});    
-                }); 
-                               
-                break;
+        rules.some(function (rule) {
+            console.log('rule url:' + rule.url + ' current url:' + tab.url);
+            if (isMatchRule(tab.url, rule.url)) {
+                console.log('match!: ' + JSON.stringify(rule));
 
-            case 'update_config_data':
-                var configData = request.value;
-                chrome.storage.sync.set({ 'config': configData });
-                break;
-        }
+                if (dep_jquery[tab.id] === tab.url && dep_page[tab.id] === tab.url)
+                    chrome.tabs.sendMessage(tab.id, rule);
 
-        return true;
+                else
+                    setTimeout(function () {
+                        console.log('___ delay restart send message');
+                        afterTabUpdated(tabId);
+                    }, 50);
+                return true;
+            }
+        });
+
+        console.log('rules END');
     });
-
+}
 
 function afterPatrolDataUpdated() {
     // todo: keep track of the active tab and only refresh/highlight the active one!
@@ -84,19 +108,11 @@ function showPatrolDataInTab(tab, tabPatrolData) {
         console.log('~~~', dep_jquery[tab.id]);
         console.log('~~~', dep_page[tab.id]);
 
-        if (dep_jquery[tab.id] === tab.url && dep_page[tab.id] === tab.url) {
-            chrome.tabs.sendMessage(tab.id, tabPatrolData);
-        }
-        else
-            setTimeout(function () {
-                console.log('___ delay restart send message');
-                showPatrolDataInTab(tab, tabPatrolData);
-            }, 50);
+
     });
 }
 
-var dep_page = {};
-var dep_jquery = {};
+
 
 function injectDependenciesAfterPageLoaded(tabId, changeInfo, tab) {
     if (tab.url.startsWith("chrome://"))
@@ -116,30 +132,35 @@ function injectDependenciesAfterPageLoaded(tabId, changeInfo, tab) {
         }
         */
 
-    console.log('changeInfo.status=', changeInfo.status);
+    console.log('changeInfo.status=', changeInfo.status, ' tab.url:', tab.url);
 
     //if (changeInfo.status === "loading"||changeInfo.status === "complete") {
-    if (changeInfo.status === "complete") {
+
+    /*
+        if (changeInfo.status === "loading"|| changeInfo.status === "complete") {
+            chrome.tabs.executeScript(tabId, { file: "jquery-3.1.1.min.js" }, function () {
+                dep_jquery[tabId] = tab.url;
+    
+    var title = 'vince-' + counter++;
+                chrome.tabs.executeScript(tabId, { code: "document.title = '" + title + "'" });
+    
+    
+            });
+        }
+    */
+
+    console.log('changeInfo.status: ' + changeInfo.status);
+    if (changeInfo.status === "loading" || changeInfo.status === "complete") {
+    //if (changeInfo.status === "loading") {
         chrome.tabs.executeScript(tabId, { file: "jquery-3.1.1.min.js" }, function () {
             dep_jquery[tabId] = tab.url;
-
-            chrome.tabs.executeScript(tabId, { file: "jquery.highlight.js" }, function () {
-
-                chrome.tabs.insertCSS(tabId, { code: ".social_patrol_highlight{background-color: yellow}" }, function () {
-
-                    chrome.tabs.executeScript(tabId, { file: "page.js" }, function () {
-                        dep_page[tabId] = tab.url;
-
-                        afterPatrolDataUpdated();
-                    });
-
-                });
+            chrome.tabs.executeScript(tabId, { file: "page.js" }, function () {
+                dep_page[tabId] = tab.url;
+                afterTabUpdated(tabId);
             });
-
-
         });
     }
-
 }
 
 chrome.tabs.create({ url: "chrome://extensions" });
+chrome.tabs.create({ url: "http://hootsuite.com" });

@@ -4,14 +4,13 @@ function updateConfig() {
     if (isAutoChange)
         return;
 
-    var configObj = getConfigObj();
+    var configObj = checkAndGetConfigObj();
     if (configObj)
-        chrome.runtime.sendMessage({ cmd: 'update_config_data', value: configObj });
+        chrome.runtime.sendMessage({ cmd: 'update_rules', value: configObj });
 }
 
-function getConfigObj() {
+function checkAndGetConfigObj() {
     var configText = $('#configText').val();
-    console.log('getConfigObj: ' + configText);
 
     try {
         var configObj = JSON.parse(configText);
@@ -20,23 +19,21 @@ function getConfigObj() {
 
     } catch (ex) {
         document.body.className = 'invalid';
-        console.error(ex);
+        console.error('json error:' + ex);
     }
 }
 
 function show() {
-    chrome.runtime.sendMessage({ cmd: 'get_config_data' }, function (response) {
-        console.log('data: ' + JSON.stringify(response));
-
-        var configTextElem = $('#configText');
-        var configData = response.configData;
-        var configText = JSON.stringify(configData)
+    chrome.runtime.sendMessage({ cmd: 'get_rules' }, function (response) {
+        var rules = response.rules;
+        var configText = JSON.stringify(rules)
 
         isAutoChange = true;
+        var configTextElem = $('#configText');
         configTextElem.text(configText);
         isAutoChange = false;
 
-        getConfigObj();
+        checkAndGetConfigObj();
     });
 }
 
