@@ -1,48 +1,55 @@
 var isAutoChange = false;
 
-function updateConfig() {
+function updateRules() {
     if (isAutoChange)
         return;
 
-    var configObj = checkAndGetConfigObj();
-    if (configObj)
-        chrome.runtime.sendMessage({ cmd: 'update_rules', value: configObj });
+    var rulesText = $('#rules').val();
+
+    if (isRulesAValidObject(rulesText))
+        chrome.runtime.sendMessage({ cmd: 'update_rules', value: rulesText });
 }
 
-function checkAndGetConfigObj() {
-    var configText = $('#configText').val();
+function updateFunctions() {
+    if (isAutoChange)
+        return;
 
+    var functionsText = $('#functions').val();
+    chrome.runtime.sendMessage({ cmd: 'update_functions', value: functionsText });
+}
+
+function show() {
+    chrome.runtime.sendMessage({ cmd: 'get' }, function (response) {
+        var rulesElem = $('#rules');
+var functionsElem = $('#functions');
+
+        isAutoChange = true;        
+        rulesElem.text(response.config.rulesText);
+        functionsElem.text(response.config.functionsText);
+        isAutoChange = false;
+
+        isRulesAValidObject(response.config.rulesText);
+    });
+}
+
+function isRulesAValidObject(rulesText) {
     try {
-        var configObj = JSON.parse(configText);
+        var rulesObj = JSON.parse(rulesText);
         document.body.className = 'valid';
-        return configObj;
+        return true;
 
     } catch (ex) {
         document.body.className = 'invalid';
         console.error('json error:' + ex);
+        return false;
     }
-}
-
-function show() {
-    chrome.runtime.sendMessage({ cmd: 'get_rules' }, function (response) {
-        var rules = response.rules;
-        var configText = JSON.stringify(rules)
-
-        isAutoChange = true;
-        var configTextElem = $('#configText');
-        configTextElem.text(configText);
-        isAutoChange = false;
-
-        checkAndGetConfigObj();
-    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     show();
 
-    $('#configText').keyup(function (e) {
-        updateConfig($(this).val());
-    });
+    $('#rules').keyup(function () { updateRules($(this).val()); });
+    $('#functions').keyup(function () { updateFunctions($(this).val()); });
 });
 
 /*

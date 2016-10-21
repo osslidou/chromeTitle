@@ -4,19 +4,21 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="popup.js"></script>
     <style>
+        
         .valid {
             background-color: lightGreen;
         }
-        
+       
         .invalid {
             background-color: lightCoral;
         }
-        
+               
         html,
         body {
-            min-width: 300px;
-        }
-        
+            width: 600px;
+            height:600px;
+        }                    
+
         textarea {
             border: 1px solid #999999;
             width: 98%;
@@ -29,7 +31,8 @@
 
 <body>
     <div>Config:</div>
-    <textarea id="configText"></textarea>
+    <textarea id="rules"></textarea>
+    <textarea id="functions"></textarea>
 </body>
 
 </html>

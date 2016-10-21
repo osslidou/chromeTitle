@@ -19,7 +19,6 @@
         "<all_urls>",
         "http://*/*",
         "https://*/*",
-        "chrome://version/strings.js",
         "contextMenus",
         "topSites","notifications","storage"
     ],

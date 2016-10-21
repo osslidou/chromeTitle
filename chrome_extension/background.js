@@ -1,33 +1,52 @@
 const APP_PORT = 8081;
 var apiUrl = 'http://localhost:' + APP_PORT + '/';
 
-var pageErrors = [];
-
-var patrolData;
 var accountInfo;
-var rules;
+var rules = [];
+var functionsText;
 
 var dep_page = {};
 var dep_jquery = {};
 var counter = 0;
 
-chrome.storage.sync.get('rules', function (items) {
-    rules = items['rules'];
+function updateGlobals(config) {
+    try {
+        rules = JSON.parse(config.rulesText);
+        functionsText = config.functionsText;
+    } catch (ex) { }
+}
+
+chrome.storage.sync.get('config', function (items) {
+    console.log('loadingItems: ', items);
+    config = items['config'];
+
+    if (config === undefined)
+        config = {};
+
+    updateGlobals(config);
+    console.log('loadingConfig: ', config);
 
     chrome.tabs.onUpdated.addListener(injectDependenciesAfterPageLoaded);
 
     chrome.runtime.onMessage.addListener(
         function (request, sender, sendResponse) {
             switch (request.cmd) {
-                case 'get_rules':
+                case 'get':
                     var response = {};
-                    response.rules = rules;
+                    response.config = config;
                     sendResponse(response);
                     break;
 
                 case 'update_rules':
-                    rules = request.value;
-                    chrome.storage.sync.set({ 'rules': rules });
+                    config.rulesText = request.value;
+                    updateGlobals(config);
+                    chrome.storage.sync.set({ 'config': config });
+                    break;
+
+                case 'update_functions':
+                    config.functionsText = request.value;
+                    updateGlobals(config);
+                    chrome.storage.sync.set({ 'config': config });
                     break;
             }
 
@@ -151,16 +170,22 @@ function injectDependenciesAfterPageLoaded(tabId, changeInfo, tab) {
 
     console.log('changeInfo.status: ' + changeInfo.status);
     if (changeInfo.status === "loading" || changeInfo.status === "complete") {
-    //if (changeInfo.status === "loading") {
+        //if (changeInfo.status === "loading") {
         chrome.tabs.executeScript(tabId, { file: "jquery-3.1.1.min.js" }, function () {
             dep_jquery[tabId] = tab.url;
             chrome.tabs.executeScript(tabId, { file: "page.js" }, function () {
                 dep_page[tabId] = tab.url;
-                afterTabUpdated(tabId);
+
+                chrome.tabs.executeScript(tabId, { code: functionsText }, function () {
+                    afterTabUpdated(tabId);
+                });
+
             });
         });
     }
 }
 
+/*
 chrome.tabs.create({ url: "chrome://extensions" });
 chrome.tabs.create({ url: "http://hootsuite.com" });
+*/

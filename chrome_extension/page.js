@@ -15,13 +15,18 @@ function messageListener(request, sender, sendResponse) {
 
         console.log('incoming command: ' + JSON.stringify(request));
 
-        var fullTitle = request.text;
+        var fullTitle = '';
+        if (request.text)
+            fullTitle = request.text;
+
+        else if (request.func)
+            fullTitle = eval(request.func);
+
         if (request.isAppendCurrent) {
             var titleSplit = document.title.split(' • ');
             var originalTitle = titleSplit.length > 1 ? titleSplit[1] : titleSplit[0];
             fullTitle += ' • ' + originalTitle;
         }
-
 
         document.title = fullTitle;
 
