@@ -54,14 +54,6 @@ chrome.storage.sync.get('config', function (items) {
         });
 });
 
-/*
-chrome.tabs.query({'active': true, 'windowId': chrome.windows.WINDOW_ID_CURRENT},
-   function(tab){
-      chrome.tabs.executeScript(tab.id,{code:"document.title = 'My lame title!'"});
-   }
-);
-*/
-
 function isMatchRule(str, rule) {
     return new RegExp("^" + rule.split("*").join(".*") + "$").test(str);
 }
@@ -91,82 +83,9 @@ function afterTabUpdated(tabId) {
     });
 }
 
-function afterPatrolDataUpdated() {
-    // todo: keep track of the active tab and only refresh/highlight the active one!
-    chrome.windows.getAll({}, function (windows) {
-        windows.forEach(function (window) {
-            console.log('chrome.windows.getAll - wid=', window.id);
-
-            chrome.tabs.query({ windowId: window.id }, function (tabs) {
-                tabs.forEach(function (tab) {
-
-                    console.log('________ tab.url', tab.url);
-                    console.log('________ patrolData', patrolData);
-
-
-                    var tabPatrolData = patrolData.filter(function (element) { return element.url === tab.url && element.text });
-                    if (tabPatrolData.length > 0) {
-                        console.log('________ afterPatrolDataUpdated= patrol data');
-                        showPatrolDataInTab(tab, tabPatrolData);
-                    } else {
-                        console.log('________ showPatrolDataInTab=NONE');
-                    }
-                });
-            });
-        });
-    });
-}
-
-// sends the message into the page - only after having checked that the dependencies are injected
-function showPatrolDataInTab(tab, tabPatrolData) {
-    console.log('________ showPatrolDataInTab=', tab.url, ' text=', tabPatrolData);
-
-    chrome.tabs.get(tab.id, function (tab) {
-
-        console.log('~~~', tab.url);
-        console.log('~~~', dep_jquery[tab.id]);
-        console.log('~~~', dep_page[tab.id]);
-
-
-    });
-}
-
-
-
 function injectDependenciesAfterPageLoaded(tabId, changeInfo, tab) {
     if (tab.url.startsWith("chrome://"))
         return;
-
-    /*
-        // http://johannburkard.de/blog/programming/javascript/highlight-javascript-text-higlighting-jquery-plugin.html
-        if (changeInfo.status === "loading") {
-            chrome.tabs.executeScript(tabId, { file: "jquery-2.1.4.min.js" }, function () {
-                dep_jquery[tabId] = tab.url;
-                chrome.tabs.executeScript(tabId, { file: "jquery.highlight-5.js" }, function () {
-                    chrome.tabs.executeScript(tabId, { file: "page.js" }, function () {
-                        dep_page[tabId] = tab.url;
-                    });
-                });
-            });
-        }
-        */
-
-    console.log('changeInfo.status=', changeInfo.status, ' tab.url:', tab.url);
-
-    //if (changeInfo.status === "loading"||changeInfo.status === "complete") {
-
-    /*
-        if (changeInfo.status === "loading"|| changeInfo.status === "complete") {
-            chrome.tabs.executeScript(tabId, { file: "jquery-3.1.1.min.js" }, function () {
-                dep_jquery[tabId] = tab.url;
-    
-    var title = 'vince-' + counter++;
-                chrome.tabs.executeScript(tabId, { code: "document.title = '" + title + "'" });
-    
-    
-            });
-        }
-    */
 
     console.log('changeInfo.status: ' + changeInfo.status);
     if (changeInfo.status === "loading" || changeInfo.status === "complete") {

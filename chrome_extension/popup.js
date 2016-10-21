@@ -21,9 +21,9 @@ function updateFunctions() {
 function show() {
     chrome.runtime.sendMessage({ cmd: 'get' }, function (response) {
         var rulesElem = $('#rules');
-var functionsElem = $('#functions');
+        var functionsElem = $('#functions');
 
-        isAutoChange = true;        
+        isAutoChange = true;
         rulesElem.text(response.config.rulesText);
         functionsElem.text(response.config.functionsText);
         isAutoChange = false;
