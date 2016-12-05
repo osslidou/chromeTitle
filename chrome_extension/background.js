@@ -16,6 +16,18 @@ function updateGlobals(config) {
     } catch (ex) { }
 }
 
+/*
+chrome.browserAction.onClicked.addListener(function(activeTab){
+    chrome.tabs.getUrl('popup.html');
+});
+*/
+
+
+chrome.browserAction.onClicked.addListener(function(tab) { 
+chrome.runtime.openOptionsPage();
+});
+
+
 chrome.storage.sync.get('config', function (items) {
     console.log('loadingItems: ', items);
     config = items['config'];
