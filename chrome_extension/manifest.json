@@ -11,7 +11,6 @@
         ]
     },
     "browser_action": {
-        "default_icon": "hootsuite.png",
          "name": "Click to change the icon's color" 
     },
     "permissions": [
@@ -21,9 +20,9 @@
         "https://*/*",
         "contextMenus",
         "topSites","notifications","storage"
-    ],
-    "icons": {
-          "300": "hootsuite.png"
-        },
+    ],   
+    /*"icons": {
+          "16": "icon-bitty.png"
+        },*/
     "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'"
 }
