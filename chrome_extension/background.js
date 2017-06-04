@@ -13,16 +13,16 @@ function updateGlobals(config) {
 
 // A generic onclick callback function.
 function genericOnClick(info, tab) {
-    console.log("item " + info.menuItemId + " was clicked");
-    console.log("info: " + JSON.stringify(info));
-    console.log("tab: " + JSON.stringify(tab));
-    chrome.tabs.sendMessage(tab.id, { greeting: "Hi from background script" });
+    getMatchingRuleAndRun(tab.id, function (rule) {
+        var request = {};
+        request.type = "isShowContextMenu";
+        request.config = rule.contextMenu;
+        chrome.tabs.sendMessage(tab.id, request);
+    });
 }
 
 var title = "menu item";
 var contextMenuId = chrome.contextMenus.create({ "title": title, "contexts": ["all"], "onclick": genericOnClick });
-
-console.log('____233');
 
 chrome.browserAction.onClicked.addListener(function (tab) {
     chrome.runtime.openOptionsPage();
@@ -69,37 +69,38 @@ function isMatchRule(str, rule) {
 }
 
 function afterTabUpdated(tabId) {
-    console.log("__afterTabUpdated", tabId);
-    chrome.tabs.get(tabId, function (tab) {
-        console.log('rules BEGIN');
+    chrome.contextMenus.update(contextMenuId, { "enabled": false });
 
-        chrome.contextMenus.update(contextMenuId, { "enabled": false });
+    getMatchingRuleAndRun(tabId, function (rule, tabUrl) {
+        if (rule.contextMenu)
+            chrome.contextMenus.update(contextMenuId, { "enabled": true });
+
+        if (rule.tweakTitle) {
+            if (dep_jquery[tabId] === tabUrl && dep_page[tabId] === tabUrl) {
+                var request = {};
+                request.type = "isSetChromeTitle";
+                request.config = rule.tweakTitle;
+                chrome.tabs.sendMessage(tabId, request);
+            } else
+                setTimeout(function () {
+                    console.log('___ delay restart send message');
+                    afterTabUpdated(tabId);
+                }, 250);
+        }
+    });
+}
+
+function getMatchingRuleAndRun(tabId, cb) {
+    chrome.tabs.get(tabId, function (tab) {
+        var request = {};
         rules.some(function (rule) {
             console.log('rule url:' + rule.url + ' current url:' + tab.url);
             if (isMatchRule(tab.url, rule.url)) {
                 console.log('match!: ' + JSON.stringify(rule));
-
-                if (rule.contextMenu) {
-                    chrome.contextMenus.update(contextMenuId, { "enabled": true });
-                }
-
-                if (dep_jquery[tab.id] === tab.url && dep_page[tab.id] === tab.url) {
-                    rule.isSetChromeTitle = true;
-                    chrome.tabs.sendMessage(tab.id, rule);
-
-                    var rule2 = {};
-                    rule2.isRevealMIDs = true;
-                    chrome.tabs.sendMessage(tab.id, rule2);
-                } else
-                    setTimeout(function () {
-                        console.log('___ delay restart send message');
-                        afterTabUpdated(tabId);
-                    }, 250);
+                cb(rule, tab.url);
                 return true;
             }
         });
-
-        console.log('rules END');
     });
 }
 
@@ -121,8 +122,8 @@ function injectScriptsIntoTab(tabId, forceInject) {
         if (tab.url.startsWith('chrome://'))
             return;
 
-        injectJqueryIfNeeded(tab,forceInject, function () {
-            injectPageJsIfNeeded(tab,forceInject, function () {
+        injectJqueryIfNeeded(tab, forceInject, function () {
+            injectPageJsIfNeeded(tab, forceInject, function () {
                 chrome.tabs.executeScript(tab.id, { code: functionsText }, function () {
                     chrome.tabs.insertCSS(tab.id, {
                         file: "styles.css"
@@ -137,7 +138,7 @@ function injectScriptsIntoTab(tabId, forceInject) {
 }
 
 function injectJqueryIfNeeded(tab, forceInject, callback) {
-    if (forceInject ||dep_jquery[tab.id] !== tab.url) {
+    if (forceInject || dep_jquery[tab.id] !== tab.url) {
         chrome.tabs.executeScript(tab.id, { file: "jquery-3.1.1.min.js" }, function () { callback(); });
         dep_jquery[tab.id] = tab.url;
         console.log('dep_jquery:[%s] = %s', tab.id, tab.url);

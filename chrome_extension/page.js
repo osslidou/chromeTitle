@@ -29,11 +29,19 @@ if (!document.hasRun) {
         console.log('elem:', elem);
         $('#a123456789').on('click', function (e) {
             //alert('clicked!');
-            $('[data-popup]').fadeOut(350);
+            $('[data-popup]').fadeOut(100);
             e.preventDefault();
         });
 
         console.log('___ popup handlers intialized 2');
+    });
+
+    $(document).keydown(function (e) {
+        // ESCAPE key pressed
+        if (e.keyCode == 27) {
+            console.log('ESC pressed');
+            $('[data-popup]').fadeOut(350);
+        }
     });
 
     console.log('texarea created!')
@@ -45,61 +53,28 @@ if (!document.hasRun) {
 function messageListener(request, sender, sendResponse) {
     console.log('messageListener');
 
-    if (request.isSetChromeTitle) {
+    if (request.type === "isSetChromeTitle")
         handleOverrideWebTitle(request);
 
-    } else if (request.isRevealMIDs) {
-        handleShowMIDs();
-
-    } else {
-        console.log('______ showPopup');
-        showPopup();
-    }
+    else if (request.type === "isShowContextMenu")
+        handleShowContextMenuData(request);
 }
 
-function showPopup() {
+function handleShowContextMenuData(request) {
     //alert('showPopup5');
     var popup = $('[data-popup]');
 
-    var pTag = document.createElement('p');
-    pTag.innerText = "Donec in volutpat nisi. In quam lectus, aliquet rhoncus cursus a, congue et arcu. Vestibulum tincidunt neque id nisi pulvinar aliquam. Nulla luctus luctus ipsum at ultricies. Nullam nec velit dui. Nullam sem eros, pulvinar sed pellentesque ac, feugiat et turpis. Donec gravida ipsum cursus massa malesuada tincidunt. Nullam finibus nunc mauris, quis semper neque ultrices in. Ut ac risus eget eros imperdiet posuere nec eu lectus.";
-    divContentsTag.appendChild(pTag);
+    var funcEvaluation = eval(request.config.func);
+    console.log('funcEvaluation=', funcEvaluation);
+    divContentsTag.innerHTML = "";
 
-    console.log('___ popup2:', popup);
-    popup.fadeIn(350);
-}
+    funcEvaluation.map(function (item) {
+        var pTag = document.createElement('p');
+        divContentsTag.appendChild(pTag);
+        pTag.innerText = item;
+    });
 
-function handleShowMIDs() {
-
-    setTimeout(function () {
-        $('#1234567890poiuy').remove();
-
-        var elemDiv = document.createElement('textarea');
-        elemDiv.id = "1234567890poiuy";
-        // refresh button        
-        elemDiv.style.cssText = 'position:absolute;margin-left:50px;bottom:0;width:100%;height:100px;z-index:1000;';
-
-
-        var text = ''
-        $('div[mid]').each(function (index) {
-
-            console.log($(this));
-            var seqNumber = $(this).find('._sequenceNumber')
-            sequenceNumber = '';
-            if (seqNumber.length)
-                sequenceNumber = seqNumber.attr('value');
-
-            text += $(this).attr('mid') + '[' + sequenceNumber + ']' + ': ' + $(this).text().replace(/\s\s+/g, ' ') + '\n';
-        });
-
-        elemDiv.innerHTML = text;
-
-        if (text !== '') {
-            document.body.appendChild(elemDiv);
-        }
-
-    }, 3000);
-
+    popup.fadeIn(100);
 }
 
 function handleOverrideWebTitle(request) {
@@ -107,21 +82,22 @@ function handleOverrideWebTitle(request) {
         console.log('incoming command: ' + JSON.stringify(request));
 
         var fullTitle = '';
-        if (request.text)
-            fullTitle = request.text;
+        if (request.config.text)
+            fullTitle = request.config.text;
 
-        else if (request.func)
-            fullTitle = eval(request.func);
+        else if (request.config.func)
+            fullTitle = eval(request.config.func);
 
-        if (request.isAppendCurrent) {
+        if (request.config.isAppendCurrent) {
             var titleSplit = document.title.split(' • ');
             var originalTitle = titleSplit.length > 1 ? titleSplit[1] : titleSplit[0];
             fullTitle += ' • ' + originalTitle;
         }
 
         setInterval(function () {
-            document.title = fullTitle;
-        }, 1000);
+            if (document.title !== fullTitle)
+                document.title = fullTitle;
+        }, 20);
     }
     catch (err) {
         console.log('500 error: ' + err.message);
