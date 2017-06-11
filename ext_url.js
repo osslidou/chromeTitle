@@ -4,26 +4,34 @@
             "func": "getHsTitle('STG')",
             "isAppendCurrent": true
         }, "contextMenu": {
-            "func": "getHsData()"
+            "func": "getHsData()",
+            "title": "Hootsuite data"
         }
     },
     {
         "url": "*google.ca*", "tweakTitle": {
             "text": "Google canada-vince"
         }, "contextMenu": {
-            "func": "getHsIds()"
+            "func": "getGoogleData()",
+            "title": "google data"
         }
     },
     {
         "url": "https://hootsuite.com*", "tweakTitle": {
             "func": "getHsTitle('PRD')",
             "isAppendCurrent": true
+        }, "contextMenu": {
+            "func": "getHsData()",
+            "title": "Hootsuite data"
         }
     },
     {
         "url": "*dashboard.owls.hootd.com*", "tweakTitle": {
             "func": "getHsTitle('DEV')",
             "isAppendCurrent": true
+        }, "contextMenu": {
+            "func": "getHsData()",
+            "title": "Hootsuite data"
         }
     },
     {
@@ -38,9 +46,10 @@
     },
     {
         "url": "*google.ca*", "tweakTitle": {
-            "text": "Google canada-vince"
+            "text": "Google canada"
         }, "contextMenu": {
-            "func": "getHsIds()"
+            "func": "getHsData()",
+            "title": "Google.ca page data"
         }
     }
 ]

@@ -21,8 +21,7 @@ function genericOnClick(info, tab) {
     });
 }
 
-var title = "menu item";
-var contextMenuId = chrome.contextMenus.create({ "title": title, "contexts": ["all"], "onclick": genericOnClick });
+var contextMenuId = chrome.contextMenus.create({ "title": "Chrome Title", "contexts": ["all"], "onclick": genericOnClick });
 
 chrome.browserAction.onClicked.addListener(function (tab) {
     chrome.runtime.openOptionsPage();
@@ -72,8 +71,9 @@ function afterTabUpdated(tabId) {
     chrome.contextMenus.update(contextMenuId, { "enabled": false });
 
     getMatchingRuleAndRun(tabId, function (rule, tabUrl) {
-        if (rule.contextMenu)
-            chrome.contextMenus.update(contextMenuId, { "enabled": true });
+        if (rule.contextMenu){
+            chrome.contextMenus.update(contextMenuId, { "enabled": true , "title": rule.contextMenu.title});
+        }
 
         if (rule.tweakTitle) {
             if (dep_jquery[tabId] === tabUrl && dep_page[tabId] === tabUrl) {

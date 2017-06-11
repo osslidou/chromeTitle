@@ -97,7 +97,7 @@ function handleOverrideWebTitle(request) {
         setInterval(function () {
             if (document.title !== fullTitle)
                 document.title = fullTitle;
-        }, 20);
+        }, 100);
     }
     catch (err) {
         console.log('500 error: ' + err.message);
