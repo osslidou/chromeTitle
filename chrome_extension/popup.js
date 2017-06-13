@@ -1,67 +1,73 @@
 function show() {
     chrome.runtime.sendMessage({ cmd: 'get' }, function (response) {
+        var config = response.config;
 
-        var rulesElem = document.getElementById('rules');
-        var functionsElem = document.getElementById('functions');
+        var rules_text = document.getElementById('rules_text');
+        var functions_text = document.getElementById('functions_text');
+        var rules_url = document.getElementById('rules_url');
+        var functions_url = document.getElementById('functions_url');
 
-        rulesElem.value = response.config.rulesText;
-        functionsElem.value = response.config.functionsText;
+        rules_text.value = config.rules_text;
+        functions_text.value = config.functions_text;
+        rules_url.value = config.rules_url;
+        functions_url.value = config.functions_url;
 
-        textAreaAdjust(rulesElem);
-        textAreaAdjust(functionsElem);
+        textAreaAdjust(rules_text);
+        textAreaAdjust(functions_text);
     });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     show();
 
-    var dropZone = document.getElementById('dropzone');
-    dropZone.addEventListener('dragover', handleDragOver, false);
-    dropZone.addEventListener('drop', handleFileSelect, false);
+    var rules_url = document.getElementById('rules_url');
+    var functions_url = document.getElementById('functions_url');
+
+    rules_url.addEventListener('input', function (e) {
+        handleLoad('rules', e.target.value);
+    }, false);
+
+    functions_url.addEventListener('input', function (e) {
+        handleLoad('functions', e.target.value);
+    }, false);
 });
 
-function handleRead(type, file) {
-    var reader = new FileReader();
-    reader.onload = function (e) {
+function handleLoad(type, target) {
 
-        var text = e.target.result;
-        console.log(type, " : ", text)
+    var rawFile = new XMLHttpRequest();
+    rawFile.overrideMimeType("application/json");
+    rawFile.open("GET", target, true);
+    rawFile.onreadystatechange = function () {
+        if (rawFile.readyState === 4 && rawFile.status == "200") {
 
-        var updateCommand = ''
-        if (type == 'rules')
-            updateCommand = 'update_rules'
-        
-        else if (type == 'functions')
-            updateCommand = 'update_functions'
-        
-        else 
-        throw Exception('invalid type: ' + type);
+            var message = { cmd: 'update' };
+            if (type == 'rules') {
+                message.configKey = 'rules_text';
+                message.value = rawFile.responseText;
+                chrome.runtime.sendMessage(message);
 
-        chrome.runtime.sendMessage({ cmd: updateCommand, value: text });
-        show();
+                message.configKey = 'rules_url';
+                message.value = target;
+                chrome.runtime.sendMessage(message, );
+            }
+
+
+            else if (type == 'functions') {
+                message.configKey = 'functions_text';
+                message.value = rawFile.responseText;
+                chrome.runtime.sendMessage(message);
+
+                message.configKey = 'functions_url';
+                message.value = target;
+                chrome.runtime.sendMessage(message, );
+            }
+            else
+                throw Exception('invalid type: ' + type);
+
+            show();
+        }
     }
-    reader.readAsText(file);
-}
-
-function handleFileSelect(evt) {
-    evt.stopPropagation();
-    evt.preventDefault();
-
-    var files = evt.dataTransfer.files;
-
-    for (var i = 0, f; f = files[i]; i++) {
-        if (f.name.indexOf('url.js') !== -1)
-            handleRead('rules', f);
-
-        if (f.name.indexOf('func.js') !== -1)
-            handleRead('functions', f);
-    }
-}
-
-function handleDragOver(evt) {
-    evt.stopPropagation();
-    evt.preventDefault();
-    evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+    rawFile.send(null);
 }
 
 function textAreaAdjust(o) {

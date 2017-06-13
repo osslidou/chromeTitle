@@ -1,18 +1,18 @@
 var rules = [];
-var functionsText;
+var functions_text;
 
 var dep_page = {};
 var dep_jquery = {};
 
-function updateGlobals(config) {
+function updateGlobalsFromConfig(config) {
     try {
-        rules = JSON.parse(config.rulesText);
-        functionsText = config.functionsText;
+        rules = JSON.parse(config.rules_text);
+        functions_text = config.functions_text;
     } catch (ex) { }
 }
 
-// A generic onclick callback function.
-function genericOnClick(info, tab) {
+var contextMenuId = chrome.contextMenus.create({ "title": "Chrome Title", "contexts": ["all"], "onclick": contextMenuOnClick });
+function contextMenuOnClick(info, tab) {
     getMatchingRuleAndRun(tab.id, function (rule) {
         var request = {};
         request.type = "isShowContextMenu";
@@ -21,19 +21,17 @@ function genericOnClick(info, tab) {
     });
 }
 
-var contextMenuId = chrome.contextMenus.create({ "title": "Chrome Title", "contexts": ["all"], "onclick": genericOnClick });
-
 chrome.browserAction.onClicked.addListener(function (tab) {
     chrome.runtime.openOptionsPage();
 });
 
 chrome.storage.sync.get('config', function (items) {
-    config = items['config'];
+    var config = items['config'];
 
     if (config === undefined)
         config = {};
 
-    updateGlobals(config);
+    updateGlobalsFromConfig(config);
     chrome.tabs.onUpdated.addListener(injectDependenciesAfterPageLoaded);
     chrome.tabs.onActivated.addListener(afterActivePageChanged);
 
@@ -46,15 +44,14 @@ chrome.storage.sync.get('config', function (items) {
                     sendResponse(response);
                     break;
 
-                case 'update_rules':
-                    config.rulesText = request.value;
-                    updateGlobals(config);
-                    chrome.storage.sync.set({ 'config': config });
-                    break;
-
-                case 'update_functions':
-                    config.functionsText = request.value;
-                    updateGlobals(config);
+                case 'update':
+                    switch (request.configKey) {
+                        case 'rules_url': config.rules_url = request.value; break;
+                        case 'functions_url': config.functions_url = request.value; break;
+                        case 'rules_text': config.rules_text = request.value; break;
+                        case 'functions_text': config.functions_text = request.value; break;
+                    }
+                    updateGlobalsFromConfig(config);
                     chrome.storage.sync.set({ 'config': config });
                     break;
             }
@@ -71,8 +68,8 @@ function afterTabUpdated(tabId) {
     chrome.contextMenus.update(contextMenuId, { "enabled": false });
 
     getMatchingRuleAndRun(tabId, function (rule, tabUrl) {
-        if (rule.contextMenu){
-            chrome.contextMenus.update(contextMenuId, { "enabled": true , "title": rule.contextMenu.title});
+        if (rule.contextMenu) {
+            chrome.contextMenus.update(contextMenuId, { "enabled": true, "title": rule.contextMenu.title });
         }
 
         if (rule.tweakTitle) {
@@ -124,7 +121,7 @@ function injectScriptsIntoTab(tabId, forceInject) {
 
         injectJqueryIfNeeded(tab, forceInject, function () {
             injectPageJsIfNeeded(tab, forceInject, function () {
-                chrome.tabs.executeScript(tab.id, { code: functionsText }, function () {
+                chrome.tabs.executeScript(tab.id, { code: functions_text }, function () {
                     chrome.tabs.insertCSS(tab.id, {
                         file: "styles.css"
                     }, function () {

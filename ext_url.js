@@ -10,7 +10,7 @@
     },
     {
         "url": "*google.ca*", "tweakTitle": {
-            "text": "Google canada-vince"
+            "text": "Google canada-vince2"
         }, "contextMenu": {
             "func": "getGoogleData()",
             "title": "google data"
